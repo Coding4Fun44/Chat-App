@@ -33,6 +33,9 @@ const chatRoomSchema = new Schema(
       },
     ],
     messages: [messageSchema],
+    password: {
+      type: String,
+    },
   },
   { timestamps: true }
 );

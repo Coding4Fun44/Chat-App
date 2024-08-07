@@ -1,5 +1,6 @@
 const { ChatRoom } = require("../models/chatRoomModel");
 const mongoose = require("mongoose");
+const bcrypt = require("bcrypt");
 
 const createMessage = async (req, res) => {
   const { sender, text } = req.body;
@@ -52,8 +53,22 @@ const getJoinedChatRooms = async (req, res) => {
   }
 };
 
+const removeUserFromChatRooms = async (req, res) => {
+  const { userName } = req.params;
+
+  try {
+    const chatRooms = await ChatRoom.updateMany(
+      { userName: userName },
+      { $pull: { userName: userName } }
+    );
+    res.status(200).json(chatRooms);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
 const createChatRoom = async (req, res) => {
-  const { name, description, messages, userName } = req.body;
+  const { name, description, messages, userName, password } = req.body;
 
   let emptyFields = [];
 
@@ -73,13 +88,26 @@ const createChatRoom = async (req, res) => {
   }
 
   try {
-    const chatRoom = await ChatRoom.create({
-      name,
-      description,
-      messages,
-      userName: [userName],
-    });
-    res.status(200).json(chatRoom);
+    if (!password) {
+      const chatRoom = await ChatRoom.create({
+        name,
+        description,
+        messages,
+        userName: [userName],
+      });
+      res.status(200).json(chatRoom);
+    } else {
+      const salt = await bcrypt.genSalt(10);
+      const hash = await bcrypt.hash(password, salt);
+      const chatRoom = await ChatRoom.create({
+        name,
+        description,
+        messages,
+        userName: [userName],
+        password: hash,
+      });
+      res.status(200).json(chatRoom);
+    }
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
@@ -88,6 +116,40 @@ const createChatRoom = async (req, res) => {
 const joinChatRoom = async (req, res) => {
   const { userName } = req.body;
   const { id } = req.params;
+
+  try {
+    const chatRoom = await ChatRoom.findOneAndUpdate(
+      { _id: id },
+      { $addToSet: { userName: userName } }
+    );
+    res.status(200).json(chatRoom);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+const joinPasswordRoom = async (req, res) => {
+  const { userName, password } = req.body;
+  const { id } = req.params;
+
+  let emptyFields = [];
+
+  if (!password) {
+    emptyFields.push("password");
+  }
+
+  if (emptyFields.length > 0) {
+    return res
+      .status(400)
+      .json({ error: "Please enter a password", emptyFields });
+  }
+
+  const chatRoom = await ChatRoom.findOne({ _id: id });
+  const match = await bcrypt.compare(password, chatRoom.password);
+
+  if (!match) {
+    return res.status(400).json({ error: "Incorrect Password", emptyFields });
+  }
 
   try {
     const chatRoom = await ChatRoom.findOneAndUpdate(
@@ -126,6 +188,33 @@ const deleteChatRoom = async (req, res) => {
   }
 };
 
+const getMutualChatRooms = async (req, res) => {
+  const { user1, user2 } = req.params;
+
+  try {
+    const chatRooms = await ChatRoom.find({
+      userName: { $all: [user1, user2] },
+    });
+    res.status(200).json(chatRooms);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+const leaveChatRoom = async (req, res) => {
+  const { id } = req.params;
+  const { userName } = req.body;
+
+  try {
+    const chatRoom = await ChatRoom.findByIdAndUpdate(id, {
+      $pull: { userName: userName },
+    });
+    res.status(200).json(chatRoom);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
 module.exports = {
   getAllChatRooms,
   createChatRoom,
@@ -136,4 +225,8 @@ module.exports = {
   getJoinedChatRooms,
   getOneChatRoom,
   getNotJoinedRooms,
+  removeUserFromChatRooms,
+  getMutualChatRooms,
+  leaveChatRoom,
+  joinPasswordRoom,
 };

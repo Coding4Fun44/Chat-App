@@ -9,6 +9,10 @@ const {
   getJoinedChatRooms,
   getOneChatRoom,
   getNotJoinedRooms,
+  removeUserFromChatRooms,
+  getMutualChatRooms,
+  leaveChatRoom,
+  joinPasswordRoom,
 } = require("../controllers/chatRoomController");
 
 const requireAuth = require("../middleware/requireAuth");
@@ -35,5 +39,13 @@ router.delete("/:id", deleteChatRoom);
 router.patch("/:id", joinChatRoom);
 
 router.get("/chat-room/:id", getOneChatRoom);
+
+router.patch("/user/:userName", removeUserFromChatRooms);
+
+router.get("/:user1/:user2", getMutualChatRooms);
+
+router.patch("/leave/:id", leaveChatRoom);
+
+router.patch("/private/:id", joinPasswordRoom);
 
 module.exports = router;

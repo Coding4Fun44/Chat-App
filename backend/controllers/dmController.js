@@ -107,6 +107,20 @@ const deleteDmRoom = async (req, res) => {
   }
 };
 
+const removeUserFromDmRooms = async (req, res) => {
+  const { userName } = req.params;
+
+  try {
+    const chatRooms = await DmRoom.updateMany(
+      { userName: userName },
+      { $pull: { userName: userName } }
+    );
+    res.status(200).json(chatRooms);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
 module.exports = {
   createDmMessage,
   getJoinedDms,
@@ -114,4 +128,5 @@ module.exports = {
   getAllDmMessages,
   deleteDmRoom,
   getOneDmRoom,
+  removeUserFromDmRooms,
 };

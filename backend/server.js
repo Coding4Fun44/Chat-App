@@ -4,6 +4,7 @@ const express = require("express");
 const chatRoutes = require("./routes/chatRoutes");
 const userRoutes = require("./routes/userRoutes");
 const dmRoutes = require("./routes/dmRoutes");
+const onlineUserRoutes = require("./routes/onlineUserRoutes");
 
 const app = express();
 app.use(express.json());
@@ -11,6 +12,7 @@ app.use(express.json());
 app.use("/chat-api", chatRoutes);
 app.use("/user-api", userRoutes);
 app.use("/dm-api", dmRoutes);
+app.use("/online-users", onlineUserRoutes);
 
 mongoose
   .connect(process.env.MONGO_URI)
